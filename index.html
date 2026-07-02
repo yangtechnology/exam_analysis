@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yang Technology 落點分析工作站</title>
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Yang Tech">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3048/3048127.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3048/3048127.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .tab-btn { transition: all 0.2s ease; border-bottom: 3px solid transparent; }
+    .tab-btn.active { color: #1a73e8; border-bottom: 3px solid #1a73e8; font-weight: bold; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+
+  <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl font-medium text-sm z-[9999] transition-all duration-300 opacity-0 pointer-events-none flex items-center">
+    <i class="fa-solid fa-circle-info mr-3 text-blue-400 text-lg"></i><span id="toastMsg"></span>
+  </div>
+
+  <nav class="glass-nav fixed w-full top-0 z-40 border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2 sm:space-x-3 cursor-pointer shrink-0" onclick="window.scrollTo(0,0)">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">Y</div>
+        <h1 class="text-xl font-bold text-slate-800 tracking-tight hidden sm:block">Yang<span class="text-blue-600">Tech</span></h1>
+      </div>
+      <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        <button onclick="openFaqModal(true)" class="text-blue-600 hover:bg-blue-50 transition-colors p-2 sm:px-3 sm:py-1.5 rounded-lg flex items-center shrink-0">
+          <i class="fa-solid fa-circle-question text-xl sm:text-lg sm:mr-1.5"></i> 
+          <span class="hidden sm:inline text-sm font-bold">系統說明</span>
+        </button>
+        <button id="navLoginBtn" onclick="toggleLoginModal()" class="text-slate-600 hover:bg-slate-100 transition-colors p-2 sm:px-3 sm:py-1.5 rounded-lg flex items-center shrink-0">
+          <i class="fa-regular fa-circle-user text-xl sm:text-lg sm:mr-1.5"></i>
+          <span class="hidden sm:inline text-sm font-bold">登入 / 註冊</span>
+        </button>
+        <div id="navUserStatus" class="hidden text-blue-600 bg-blue-50 p-2 sm:px-4 sm:py-1.5 rounded-full border border-blue-100 flex items-center shrink-0">
+          <i class="fa-solid fa-user-check text-lg sm:mr-1.5"></i>
+          <span id="navUsername" class="hidden sm:inline-block text-sm font-bold truncate max-w-[100px]"></span>
+        </div>
+        <button onclick="toggleWishlist()" class="relative bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-blue-600 font-medium p-2 sm:py-1.5 sm:px-4 rounded-full shadow-sm transition-all flex items-center ml-1 shrink-0">
+          <i class="fa-solid fa-bookmark text-lg sm:text-base sm:mr-1.5 text-blue-500"></i> 
+          <span class="hidden sm:inline text-sm">我的志願</span>
+          <span id="navWishlistCount" class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm hidden">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="faqModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 z-[60] hidden flex items-center justify-center backdrop-blur-md transition-opacity p-4">
+    <div class="bg-white w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform flex flex-col" id="faqBox">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-blue-600 text-white">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-rocket mr-2"></i>Yang Tech 系統運作說明</h3>
+        <button id="faqCloseBtn" onclick="closeFaqModal()" class="text-blue-200 hover:text-white text-xl transition-colors hidden"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-slate-50" id="faqContentContainer" onscroll="checkFaqScroll()">
+        <div id="faqWelcome" class="bg-white border border-blue-100 rounded-xl p-8 text-center shadow-sm relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-400"></div>
+          <i class="fa-solid fa-hand-sparkles text-5xl text-yellow-400 mb-4"></i>
+          <h2 class="text-2xl font-extrabold text-blue-800 mb-3">歡迎使用 Yang Tech 升學落點分析！</h2>
+          <p class="text-slate-600 font-medium leading-relaxed mb-4">
+            本平台整合了「個人申請、四技科大、分科測驗」三大數據庫。<br>
+            正在為您準備系統使用秘笈，請稍候...
+          </p>
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500"></i>
+        </div>
+        <div id="faqListContainer" class="hidden space-y-3"></div>
+      </div>
+      <div id="faqFooter" class="p-4 bg-white border-t border-slate-100 text-center hidden">
+        <p id="faqScrollHint" class="text-xs text-red-500 font-bold mb-2 animate-pulse"><i class="fa-solid fa-arrow-down mr-1"></i>請向下滑動閱讀完畢，以解鎖系統</p>
+        <button id="faqSubmitBtn" disabled onclick="closeFaqModal()" class="bg-slate-300 text-slate-500 font-bold py-2.5 px-10 rounded-full cursor-not-allowed transition-colors">我已閱讀並了解，開始使用</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loginModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform" id="loginBox">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-lg text-slate-800" id="authModalTitle">登入 Yang Tech</h3>
+        <button onclick="toggleLoginModal()" class="text-slate-400 hover:text-red-500 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <div id="loginFormArea" class="p-8 space-y-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">帳號 (Username)</label>
+          <input type="text" id="login_username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium" placeholder="例如: yang123">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">密碼 (Password)</label>
+          <input type="password" id="login_password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium" placeholder="請輸入密碼">
+        </div>
+        <button onclick="executeLogin()" id="loginBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors mt-4">
+          安全登入
+        </button>
+        <div class="flex justify-between text-sm mt-4 px-1">
+          <button onclick="switchAuthView('register')" class="text-slate-500 hover:text-blue-600 font-medium transition-colors">建立新帳號</button>
+          <button onclick="switchAuthView('forgot')" class="text-slate-500 hover:text-blue-600 font-medium transition-colors">忘記密碼？</button>
+        </div>
+      </div>
+
+      <div id="registerFormArea" class="p-8 space-y-5 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">帳號 (Username)</label>
+          <input type="text" id="reg_username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-medium" placeholder="自訂帳號">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">密碼 (Password)</label>
+          <input type="password" id="reg_password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-medium" placeholder="設定密碼">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">電子郵件 (忘記密碼時用)</label>
+          <input type="email" id="reg_email" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 font-medium" placeholder="例如: your@email.com">
+        </div>
+        <button onclick="executeRegister()" id="regBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors mt-4">
+          立即註冊
+        </button>
+        <div class="text-center text-sm mt-4">
+          <button onclick="switchAuthView('login')" class="text-slate-500 hover:text-emerald-600 font-medium transition-colors">已有帳號？返回登入</button>
+        </div>
+      </div>
+
+      <div id="forgotFormArea" class="p-8 space-y-5 hidden">
+        <p class="text-sm text-slate-600 mb-2">請輸入您的帳號，系統將會產生一組隨機密碼並寄送至您註冊時綁定的電子信箱。</p>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">帳號 (Username)</label>
+          <input type="text" id="forgot_username" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-slate-800 font-medium" placeholder="請輸入帳號">
+        </div>
+        <button onclick="executeForgotPassword()" id="forgotBtn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-md transition-colors mt-4">
+          重置密碼並寄送信件
+        </button>
+        <div class="text-center text-sm mt-4">
+          <button onclick="switchAuthView('login')" class="text-slate-500 hover:text-amber-600 font-medium transition-colors">想起密碼了？返回登入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="feedbackModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-[70] hidden flex items-center justify-center backdrop-blur-sm transition-opacity p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform" id="feedbackBox">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-blue-600 text-white">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-paper-plane mr-2"></i>聯絡 Yang Tech 站長</h3>
+        <button onclick="toggleFeedbackModal()" class="text-blue-200 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-sm text-slate-500 mb-2">遇到系統 Bug、有希望新增的功能，或是有落點策略想討論嗎？歡迎隨時留言！</p>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">主旨分類</label>
+          <select id="fbType" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium text-sm">
+            <option value="系統 Bug 回報">🐛 系統 Bug 回報</option>
+            <option value="許願新功能">✨ 許願新功能</option>
+            <option value="落點疑問討論">📚 落點疑問討論</option>
+            <option value="其他想說的話">💬 其他想說的話</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">詳細內容 <span class="text-red-500">*</span></label>
+          <textarea id="fbContent" rows="4" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium text-sm resize-none" placeholder="請詳細描述你的問題或建議..."></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">聯絡方式 (IG 帳號或 Email) <span class="text-slate-400 font-normal">選填，若需站長回覆請留下</span></label>
+          <input type="text" id="fbContact" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium text-sm" placeholder="例如: @your_ig_account">
+        </div>
+        <button onclick="sendFeedback()" id="fbSubmitBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-lg shadow-md transition-colors mt-2">
+          送出訊息給站長
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <button onclick="toggleFeedbackModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 transition-transform hover:scale-110 group border-2 border-white">
+    <i class="fa-solid fa-comment-dots group-hover:hidden"></i>
+    <i class="fa-solid fa-paper-plane hidden group-hover:block"></i>
+    <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full animate-bounce"></span>
+  </button>
+
+  <div id="recommendModal" class="fixed inset-0 bg-slate-900 bg-opacity-70 z-[80] hidden flex items-center justify-center backdrop-blur-md transition-opacity p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform flex flex-col" id="recommendBox">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-indigo-600 text-white">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 智能專家選填 (12 志願)</h3>
+        <button onclick="closeRecommendModal()" class="text-indigo-200 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <div id="recommendSetup" class="p-6 space-y-5 bg-slate-50 overflow-y-auto max-h-[75vh]">
+        <p class="text-sm text-slate-600 font-medium mb-1">AI 將根據「學校聲譽、企業愛用度」為您挑出最強陣容！</p>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">1. 學校體系偏好</label>
+          <select id="recPublic" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium text-sm">
+            <option value="any">公私立不拘 (皆可)</option>
+            <option value="public">非國立大學不讀 (僅國立/市立)</option>
+            <option value="private">私立大學為主</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">2. 學校地區偏好 (可複選)</label>
+          <div class="grid grid-cols-2 gap-2 bg-white p-2.5 rounded-lg border border-slate-300">
+            <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                <input type="checkbox" value="north" class="rec-region-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>北部 (北北基桃竹宜)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                <input type="checkbox" value="central" class="rec-region-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>中部 (中彰投苗雲)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                <input type="checkbox" value="south" class="rec-region-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>南部 (嘉南高屏)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                <input type="checkbox" value="east" class="rec-region-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>東部及離島</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">3. 未來想走的學群方向 (可複選)</label>
+          <div class="h-40 overflow-y-auto bg-white p-2.5 rounded-lg border border-slate-300 space-y-1">
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="商|管|財|經|企|貿|金融|會計|統計|行銷|經濟" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>📊 商管 / 財經 / 統計</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="法|政|公|社|外交|心理|犯罪|行政" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>⚖️ 法政 / 社會 / 心理</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="資訊|電機|電子|資工|資管|機電|光電|通訊|網" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>💻 資訊 / 電機 / 通訊</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="工程|土木|機械|化材|材料|環工|工管|航太|造船|建築" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>⚙️ 工程 / 建築 / 製造</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="醫|藥|護理|衛|長照|治療|視光|生醫|聽力|營養" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>🏥 醫藥 / 衛生 / 復健</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="生|化學|物理|數學|大氣|地質|科學|生技" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>🧪 數理 / 化學 / 生命科學</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="文|語|歷史|地理|哲學|傳播|新聞|廣電|媒體|廣告" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>📖 文學 / 外語 / 大眾傳播</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="藝|設|音樂|美術|舞蹈|戲劇|動畫|影音|圖文" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>🎨 藝術 / 設計 / 展演</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="教|體育|運動|休閒|觀光|餐旅|特教|幼教" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>🏃 教育 / 體育 / 觀光餐旅</span>
+            </label>
+            <label class="flex items-center space-x-2.5 text-sm text-slate-700 cursor-pointer hover:bg-indigo-50 p-1.5 rounded transition-colors">
+              <input type="checkbox" value="農|林|漁|牧|獸|植物|動物|食品|景觀" class="rec-group-cb rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" checked> <span>🌱 農林漁牧 / 食品獸醫</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 mb-1.5">4. 你的選填策略是？</label>
+          <select id="recStrategy" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-slate-800 font-medium text-sm">
+            <option value="balanced">⚖️ 均衡分配 (保底4、理想5、夢幻3)</option>
+            <option value="conservative">🛡️ 保守求穩 (保底6、理想5、夢幻1)</option>
+            <option value="aggressive">🔥 積極衝刺 (保底2、理想5、夢幻5)</option>
+          </select>
+        </div>
+        
+        <button onclick="executeRecommendation()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-colors mt-2 text-base">
+          ✨ 啟動 AI 智能挑選
+        </button>
+      </div>
+
+      <div id="recommendResults" class="hidden p-5 bg-slate-50/50 flex-1 overflow-hidden flex flex-col">
+      </div>
+    </div>
+  </div>
+
+  <div id="wishlistDrawer" class="fixed inset-y-0 right-0 w-[400px] max-w-full bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col border-l border-slate-200">
+    <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+      <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-bookmark text-amber-400 mr-2"></i>我的夢幻志願</h3>
+      <div class="flex items-center space-x-4">
+         <button onclick="refreshWishlist()" class="text-blue-500 hover:text-blue-700 text-sm font-bold flex items-center">
+           <i id="refreshWishlistIcon" class="fa-solid fa-rotate-right mr-1.5"></i> 更新燈號
+         </button>
+         <button onclick="toggleWishlist()" class="text-slate-400 hover:text-slate-700 text-2xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="p-4 bg-white border-b border-slate-100">
+      <div id="collisionBox" class="p-3 rounded-lg text-sm font-medium flex items-start space-x-2 bg-slate-50 text-slate-500 border border-slate-200">
+        <i class="fa-solid fa-circle-info mt-0.5"></i><span>加入個申與四技志願後，將自動檢查撞期。</span>
+      </div>
+    </div>
+    
+    <div class="px-4 pt-3 pb-1">
+      <button onclick="callTrueAI()" id="trueAiBtn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 rounded-lg shadow-md transition-all flex justify-center items-center text-sm">
+        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 召喚 AI 專屬升學策略 (每日 1 次)
+      </button>
+      
+      <button id="toggleAiHistoryBtn" onclick="toggleAiResult()" class="hidden w-full mt-2.5 text-xs text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 py-2 rounded-lg transition-colors border border-indigo-100">
+        <i class="fa-solid fa-clock-rotate-left mr-1.5"></i> 展開上次 AI 建議
+      </button>
+
+      <div id="aiStrategyResult" class="hidden mt-3 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-900 leading-relaxed shadow-inner relative">
+        <button onclick="toggleAiResult()" class="absolute top-2 right-2 text-indigo-400 hover:text-indigo-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div id="aiStrategyContent" class="max-h-[35vh] overflow-y-auto pr-2 mt-2"></div>
+      </div>
+    </div>
+
+    <div id="wishlistDisplay" class="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50/50 border-t border-slate-100">
+      <div class="text-center text-slate-400 text-sm mt-10">空空如也<br>點擊卡片上的書籤來收藏校系吧！</div>
+    </div>
+    <div class="p-4 border-t border-slate-100 bg-white">
+      <button onclick="saveData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors flex justify-center items-center text-base">
+        <i class="fa-solid fa-cloud-arrow-up mr-2"></i> 儲存至雲端
+      </button>
+    </div>
+  </div>
+  <div id="drawerOverlay" onclick="toggleWishlist()" class="fixed inset-0 bg-slate-900 bg-opacity-20 z-40 hidden backdrop-blur-sm transition-opacity"></div>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto px-6 pt-24 pb-20">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">115 學年度 <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">全台升學落點分析</span></h2>
+      <p class="text-slate-500 font-medium">支援個申、四技、分科，多重學群精準篩選。</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+      <div class="flex border-b border-slate-200 bg-slate-50 px-2 pt-2">
+        <button onclick="showToast('🚧 115學年度個申資料建置中，暫不開放！')" id="tab-gsat" class="px-6 py-3 text-sm font-bold text-slate-300 cursor-not-allowed bg-slate-100 rounded-t-lg border border-b-0 border-slate-200"><i class="fa-solid fa-lock mr-2"></i>個申 (暫不開放)</button>
+        <button onclick="switchTab('tech')" id="tab-tech" class="tab-btn active px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-800"><i class="fa-solid fa-wrench mr-2"></i>四技申請 (科大)</button>
+        <button onclick="switchTab('ast')" id="tab-ast" class="tab-btn px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-800"><i class="fa-solid fa-file-pen mr-2"></i>分科測驗</button>
+      </div>
+
+      <div class="p-8">
+        <h3 class="text-base font-bold text-slate-700 mb-4"><i class="fa-solid fa-graduation-cap text-blue-500 mr-2"></i>學測成績</h3>
+        <div class="grid grid-cols-3 md:grid-cols-7 gap-4 mb-6">
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">國文</label><input type="number" id="國文" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">英文</label><input type="number" id="英文" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">數A</label><input type="number" id="數A" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">數B</label><input type="number" id="數B" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">社會</label><input type="number" id="社會" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div><label class="block text-xs font-bold text-slate-500 mb-1.5">自然</label><input type="number" id="自然" placeholder="0" max="15" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 text-base"></div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1.5">英聽</label>
+            <select id="英聽" class="w-full border border-slate-300 rounded-lg px-3 py-3 focus:ring-2 focus:ring-blue-500 text-center font-bold text-slate-700 bg-white appearance-none text-sm">
+              <option value="">--</option><option value="A">A 級</option><option value="B">B 級</option><option value="C">C 級</option><option value="F">F 級</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="astInputs" class="hidden border-t border-slate-100 pt-6 mb-6">
+          <h3 class="text-base font-bold text-slate-700 mb-4"><i class="fa-solid fa-flask text-purple-500 mr-2"></i>分科測驗成績 (60級分制)</h3>
+          <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">數甲</label><input type="number" id="數甲" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">數乙</label><input type="number" id="數乙" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">物理</label><input type="number" id="物理" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">化學</label><input type="number" id="化學" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">生物</label><input type="number" id="生物" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">歷史</label><input type="number" id="歷史" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">地理</label><input type="number" id="地理" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">公民</label><input type="number" id="公民" placeholder="0" max="60" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-purple-500 text-center font-bold text-base"></div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4 mb-4">
+          <button onclick="toggleArts()" class="text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors flex items-center">
+            <i id="artsIcon" class="fa-solid fa-chevron-right mr-2"></i> 展開術科成績 (音樂/美術/體育)
+          </button>
+          <div id="artsSection" class="hidden mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">主修</label><input type="number" id="主修" placeholder="0" max="100" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 text-center font-bold"></div>
+            <div><label class="block text-xs font-bold text-slate-500 mb-1.5">視唱</label><input type="number" id="視唱" placeholder="0" max="100" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 text-center font-bold"></div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-6 mt-2 mb-6 bg-blue-50/40 p-5 rounded-xl border border-blue-100/50 relative">
+          <div class="flex justify-between items-center mb-3">
+             <h3 class="text-sm font-bold text-blue-800"><i class="fa-solid fa-building-columns text-blue-500 mr-2"></i>精準目標篩選</h3>
+             <span id="schoolLoadStatus" class="text-xs font-bold text-blue-600 hidden"><i class="fa-solid fa-spinner fa-spin mr-1"></i>載入資料庫中...</span>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-4 mb-4 relative z-20">
+            <div class="flex-1 relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i>
+              <input type="text" id="schoolSearch" onkeyup="filterSchoolCheckboxes()" placeholder="快速搜尋大學名稱..." class="w-full border border-blue-200 rounded-lg pl-9 pr-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm bg-white">
+            </div>
+
+            <div class="flex-1 relative">
+              <i class="fa-solid fa-layer-group absolute left-3 top-3.5 text-slate-400 z-10 pointer-events-none"></i>
+              <button id="groupBtn" type="button" onclick="toggleGroupDropdown()" class="w-full border border-blue-200 rounded-lg pl-9 pr-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm bg-white text-left text-slate-700 flex justify-between items-center">
+                <span id="groupBtnText" class="truncate font-medium">不限學科領域 (已全選)</span>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 ml-2"></i>
+              </button>
+
+              <div id="groupDropdown" class="hidden absolute top-full left-0 mt-1.5 w-full bg-white border border-blue-200 rounded-lg shadow-xl max-h-72 flex flex-col z-50">
+                <div class="p-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 rounded-t-lg">
+                   <span class="text-xs font-bold text-slate-500 pl-1">複選目標學群</span>
+                   <div>
+                     <button type="button" class="text-xs text-blue-600 font-bold hover:text-blue-800 mr-3 px-1" onclick="selectAllGroups(true)">全選</button>
+                     <button type="button" class="text-xs text-slate-400 font-bold hover:text-slate-600 px-1" onclick="selectAllGroups(false)">清空</button>
+                   </div>
+                </div>
+                <div class="p-2 overflow-y-auto space-y-1 bg-white rounded-b-lg">
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="商|管|財|經|企|貿|金融|會計|統計|行銷|經濟" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>📊 商管 / 財經 / 統計學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="法|政|公|社|外交|心理|犯罪|行政" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>⚖️ 法政 / 社會 / 心理學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="資訊|電機|電子|資工|資管|機電|光電|通訊|網" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>💻 資訊 / 電機 / 通訊學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="工程|土木|機械|化材|材料|環工|工管|航太|造船|建築" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>⚙️ 工程 / 建築 / 製造學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="醫|藥|護理|衛|長照|治療|視光|生醫|聽力|營養" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>🏥 醫藥 / 衛生 / 復健學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="生|化學|物理|數學|大氣|地質|科學|生技" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>🧪 數理 / 化學 / 生命科學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="文|語|歷史|地理|哲學|傳播|新聞|廣電|媒體|廣告" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>📖 文學 / 外語 / 大眾傳播</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="藝|設|音樂|美術|舞蹈|戲劇|動畫|影音|圖文" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>🎨 藝術 / 設計 / 展演學群</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="教|體育|運動|休閒|觀光|餐旅|特教|幼教" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>🏃 教育 / 體育 / 觀光餐旅</span>
+                   </label>
+                   <label class="flex items-center space-x-2.5 p-1.5 hover:bg-blue-50 rounded cursor-pointer text-xs text-slate-700 transition-colors">
+                     <input type="checkbox" value="農|林|漁|牧|獸|植物|動物|食品|景觀" class="group-cb rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5" onchange="updateGroupBtnText()">
+                     <span>🌱 農林漁牧 / 食品獸醫學群</span>
+                   </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 relative z-10">
+            <div class="bg-white p-4 rounded-lg border border-blue-100 shadow-sm flex flex-col h-64">
+               <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                 <span class="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">國立 / 市立大學</span>
+                 <label class="text-xs font-bold text-slate-500 cursor-pointer hover:text-blue-600 bg-slate-100 px-2 py-1 rounded">
+                   <input type="checkbox" onchange="toggleAllSchools(this, 'public')" class="mr-1 rounded text-blue-600"> 全選公立
+                 </label>
+               </div>
+               <div id="publicContainer" class="flex-1 overflow-y-auto p-1 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 content-start"></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col h-64">
+               <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                 <span class="text-sm font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">私立大學</span>
+                 <label class="text-xs font-bold text-slate-500 cursor-pointer hover:text-blue-600 bg-slate-100 px-2 py-1 rounded">
+                   <input type="checkbox" onchange="toggleAllSchools(this, 'private')" class="mr-1 rounded text-blue-600"> 全選私立
+                 </label>
+               </div>
+               <div id="privateContainer" class="flex-1 overflow-y-auto p-1 grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1 content-start"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+          <button onclick="startAnalysis()" id="analyzeBtn" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg py-3.5 px-10 rounded-full shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200 inline-flex justify-center items-center">
+            <i class="fa-solid fa-bolt text-yellow-400 mr-3"></i> 一鍵啟動智能分析
+          </button>
+          <button onclick="openRecommendModal()" id="recommendBtn" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-base py-3.5 px-6 rounded-full border border-indigo-200 shadow-sm transition-all duration-200 inline-flex justify-center items-center">
+            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 智能志願推薦
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="resultContainer" class="scroll-mt-24">
+      <div id="emptyState" class="text-center py-16">
+        <i class="fa-solid fa-layer-group text-6xl text-slate-200 mb-4"></i>
+        <h3 class="text-xl font-bold text-slate-400">請先勾選上方條件，並啟動分析</h3>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ==========================================
+    // 🔌 串接後端 API 設定 (請填入你的 GAS 網址)
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbw2MdtnRg8GQxA8Je-LZZDwuzNiiHlAburRkELtYtgB-AxGpz2v-BHhyC2n9-dRU20zeg/exec";
+
+    // 核心通訊引擎：取代原本的 google.script.run
+    async function callAPI(action, params = {}) {
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, ...params }),
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          return result.data;
+        } else {
+          console.error("API Error:", result.error);
+          showToast("系統發生錯誤，請聯絡站長");
+          return null;
+        }
+      } catch (e) {
+        console.error("Fetch Error:", e);
+        showToast("網路連線異常，請檢查網路狀態");
+        return null;
+      }
+    }
+
+    // ==========================================
+    // 🚀 PWA Manifest 動態生成
+    // ==========================================
+    (function initPWA() {
+      const appIconUrl = "https://cdn-icons-png.flaticon.com/512/3048/3048127.png"; 
+      const manifestJSON = {
+        "name": "Yang Technology 升學分析",
+        "short_name": "Yang Tech",
+        "start_url": window.location.href, 
+        "display": "standalone", 
+        "theme_color": "#2563eb", 
+        "background_color": "#f8fafc",
+        "icons": [
+          { "src": appIconUrl, "sizes": "192x192", "type": "image/png" },
+          { "src": appIconUrl, "sizes": "512x512", "type": "image/png" }
+        ]
+      };
+      const manifestString = JSON.stringify(manifestJSON);
+      const manifestUrl = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestString);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+    })();
+
+    function checkPWAInstall() {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+      if (isMobile && !isStandalone) {
+        setTimeout(() => {
+          let instruction = "點擊右上角選單，選擇「加到主畫面」"; 
+          if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            instruction = "點擊下方分享按鈕 [↑]，選擇「加到主畫面」"; 
+          }
+          showToast("📱 變成專屬 App：" + instruction);
+        }, 3000);
+      }
+    }
+
+    var currentUser = "";
+    var myWishlist = []; 
+    var currentChannel = "tech"; 
+    var isFirstLoad = true; 
+    var faqRead = false; 
+    var hasOpenedGroup = false; 
+    var popularityData = {}; 
+    var lastAnalysisResults = []; 
+
+    document.addEventListener("DOMContentLoaded", async function() {
+      loadSchoolsForTab(currentChannel);
+      checkPWAInstall(); 
+
+      if(isFirstLoad) openFaqModal(false); 
+      
+      const faqs = await callAPI('getFAQ');
+      if (faqs) renderFaqList(faqs);
+
+      const popRes = await callAPI('getWishlistStats', { excludeUsername: "" });
+      if (popRes) popularityData = popRes;
+    });
+
+    // ==========================================
+    // 🔐 帳號與安全視圖切換與執行 (更新)
+    // ==========================================
+    function switchAuthView(view) {
+      document.getElementById('loginFormArea').classList.add('hidden');
+      document.getElementById('registerFormArea').classList.add('hidden');
+      document.getElementById('forgotFormArea').classList.add('hidden');
+      
+      if(view === 'login') {
+        document.getElementById('loginFormArea').classList.remove('hidden');
+        document.getElementById('authModalTitle').innerText = '登入 Yang Tech';
+      } else if(view === 'register') {
+        document.getElementById('registerFormArea').classList.remove('hidden');
+        document.getElementById('authModalTitle').innerText = '註冊新帳號';
+      } else if(view === 'forgot') {
+        document.getElementById('forgotFormArea').classList.remove('hidden');
+        document.getElementById('authModalTitle').innerText = '忘記密碼';
+      }
+    }
+
+    function toggleLoginModal() {
+      var m = document.getElementById('loginModal');
+      var box = document.getElementById('loginBox');
+      if(m.classList.contains('hidden')) {
+        switchAuthView('login');
+        m.classList.remove('hidden');
+        setTimeout(()=> box.classList.remove('scale-95'), 10);
+      } else {
+        box.classList.add('scale-95');
+        setTimeout(()=> m.classList.add('hidden'), 200);
+      }
+    }
+
+    async function executeLogin() {
+      var u = document.getElementById('login_username').value;
+      var p = document.getElementById('login_password').value;
+      if(!u || !p) { Swal.fire("提示", "請輸入帳號與密碼", "warning"); return; }
+      
+      var btn = document.getElementById('loginBtn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 驗證中...';
+      btn.disabled = true;
+
+      const res = await callAPI('loginUser', { username: u, password: p });
+      
+      btn.innerHTML = '安全登入';
+      btn.disabled = false;
+      
+      if(res && res.success) {
+        currentUser = u;
+        toggleLoginModal();
+        document.getElementById('navLoginBtn').classList.add('hidden');
+        document.getElementById('navUserStatus').classList.remove('hidden');
+        document.getElementById('navUsername').innerText = u;
+        
+        var savedScores = JSON.parse(res.scores || "{}");
+        ['國文','英文','數A','數B','社會','自然','英聽','主修','視唱','數甲','數乙','物理','化學','生物','歷史','地理','公民'].forEach(sub => {
+          if(savedScores[sub] !== undefined && document.getElementById(sub)) document.getElementById(sub).value = savedScores[sub];
+        });
+        
+        try { myWishlist = res.wishlist ? JSON.parse(res.wishlist) : []; } catch(e) { myWishlist = []; }
+        myWishlist = myWishlist.map(w => w.channel ? w : {...w, channel: 'gsat'});
+        
+        const popRes = await callAPI('getWishlistStats', { excludeUsername: currentUser });
+        if (popRes) {
+           popularityData = popRes;
+           updateWishlistUI();
+           Swal.fire({toast: true, position: 'top-end', icon: 'success', title: '登入成功', showConfirmButton: false, timer: 1500});
+        }
+        
+        if (res.lastAiResponse && res.lastAiResponse !== "") {
+           var formattedText = res.lastAiResponse.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-indigo-800">$1</span>');
+           document.getElementById('aiStrategyContent').innerHTML = '<strong><i class="fa-solid fa-robot mr-1"></i> 上次 AI 導師建議：</strong><div class="mt-2 text-slate-700">' + formattedText + '</div>';
+           document.getElementById('toggleAiHistoryBtn').classList.remove('hidden'); 
+           document.getElementById('aiStrategyResult').classList.add('hidden'); 
+        }
+      } else if (res) {
+        Swal.fire("登入失敗", res.message, "error");
+      }
+    }
+
+    async function executeRegister() {
+      var u = document.getElementById('reg_username').value;
+      var p = document.getElementById('reg_password').value;
+      var e = document.getElementById('reg_email').value;
+      
+      if(!u || !p || !e) { Swal.fire("提示", "請填寫完整註冊資訊", "warning"); return; }
+      if(u.length < 3 || p.length < 4) { Swal.fire("提示", "帳號至少3碼，密碼至少4碼", "warning"); return; }
+      if(!e.includes('@')) { Swal.fire("提示", "請輸入有效的電子信箱", "warning"); return; }
+      
+      var btn = document.getElementById('regBtn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 註冊中...';
+      btn.disabled = true;
+
+      const res = await callAPI('registerUser', { username: u, password: p, email: e });
+      
+      btn.innerHTML = '立即註冊';
+      btn.disabled = false;
+      
+      if(res && res.success) {
+        Swal.fire("註冊成功", res.message, "success");
+        document.getElementById('login_username').value = u;
+        switchAuthView('login');
+      } else if (res) {
+        Swal.fire("註冊失敗", res.message, "error");
+      }
+    }
+
+    async function executeForgotPassword() {
+      var u = document.getElementById('forgot_username').value;
+      if(!u) { Swal.fire("提示", "請輸入您的帳號", "warning"); return; }
+      
+      var btn = document.getElementById('forgotBtn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 處理中...';
+      btn.disabled = true;
+
+      const res = await callAPI('forgotPassword', { username: u });
+      
+      btn.innerHTML = '重置密碼並寄送信件';
+      btn.disabled = false;
+      
+      if(res && res.success) {
+        Swal.fire("寄送成功", res.message, "success");
+        switchAuthView('login');
+      } else if (res) {
+        Swal.fire("處理失敗", res.message, "error");
+      }
+    }
+
+    // ==========================================
+
+    function toggleAiResult() {
+      var box = document.getElementById('aiStrategyResult');
+      var btn = document.getElementById('toggleAiHistoryBtn');
+      if(box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        btn.classList.add('hidden');
+      } else {
+        box.classList.add('hidden');
+        btn.classList.remove('hidden');
+      }
+    }
+
+    function toggleGroupDropdown() {
+      var dropdown = document.getElementById('groupDropdown');
+      dropdown.classList.toggle('hidden');
+      if (!hasOpenedGroup) {
+        hasOpenedGroup = true;
+        updateGroupBtnText(); 
+      }
+    }
+
+    document.addEventListener('click', function(event) {
+      var dropdown = document.getElementById('groupDropdown');
+      var btn = document.getElementById('groupBtn');
+      if (!btn.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    function selectAllGroups(isSelect) {
+      document.querySelectorAll('.group-cb').forEach(function(cb) {
+        cb.checked = isSelect;
+      });
+      updateGroupBtnText();
+    }
+
+    function updateGroupBtnText() {
+      var total = document.querySelectorAll('.group-cb').length;
+      var checked = document.querySelectorAll('.group-cb:checked').length;
+      var btnText = document.getElementById('groupBtnText');
+      
+      if (checked === total) {
+        btnText.innerText = "不限學科領域 (已全選)";
+        btnText.className = "truncate font-medium text-slate-700";
+      } else if (checked === 0) {
+        btnText.innerText = "未選擇任何學群";
+        btnText.className = "truncate font-bold text-red-500";
+      } else {
+        btnText.innerText = "已選 " + checked + " 個特定學群";
+        btnText.className = "truncate font-bold text-blue-600";
+      }
+    }
+
+    function openFaqModal(isFromNav) {
+      var m = document.getElementById('faqModal');
+      var box = document.getElementById('faqBox');
+      m.classList.remove('hidden');
+      setTimeout(()=> box.classList.remove('scale-95'), 10);
+      if (isFromNav) unlockFaq();
+    }
+
+    function closeFaqModal() {
+      if(!faqRead) return; 
+      var m = document.getElementById('faqModal');
+      var box = document.getElementById('faqBox');
+      box.classList.add('scale-95');
+      setTimeout(()=> m.classList.add('hidden'), 200);
+      isFirstLoad = false; 
+    }
+
+    function renderFaqList(faqs) {
+      var welcome = document.getElementById('faqWelcome');
+      var listContainer = document.getElementById('faqListContainer');
+      var footer = document.getElementById('faqFooter');
+
+      welcome.classList.add('hidden');
+      listContainer.classList.remove('hidden');
+      footer.classList.remove('hidden');
+
+      if (!faqs || faqs.length === 0) {
+        listContainer.innerHTML = `<div class="text-center text-slate-500 py-10">目前沒有常見問題，可以直接開始使用！</div>`;
+        unlockFaq(); 
+        return;
+      }
+      
+      var html = '';
+      faqs.forEach(function(item) {
+        html += `
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md">
+            <h4 class="font-bold text-blue-800 mb-1.5 flex items-start">
+              <i class="fa-solid fa-circle-question mt-1 mr-2 text-blue-500 shrink-0"></i>
+              <span>${item.q}</span>
+            </h4>
+            <p class="text-sm text-slate-600 leading-relaxed pl-6 border-l-2 border-blue-100 ml-1.5">${item.a.replace(/\n/g, '<br>')}</p>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+      setTimeout(checkFaqScroll, 150);
+    }
+
+    function checkFaqScroll() {
+      if(faqRead) return; 
+      var container = document.getElementById('faqContentContainer');
+      if (container.scrollHeight - container.scrollTop <= container.clientHeight + 20) {
+         unlockFaq();
+      }
+    }
+
+    function unlockFaq() {
+      faqRead = true;
+      document.getElementById('faqCloseBtn').classList.remove('hidden'); 
+      document.getElementById('faqScrollHint').classList.add('hidden'); 
+      
+      var btn = document.getElementById('faqSubmitBtn');
+      btn.disabled = false; 
+      btn.className = "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-10 rounded-full shadow-md transition-colors cursor-pointer";
+    }
+
+    function switchTab(channel) {
+      if (channel === 'gsat') {
+        showToast('🚧 115學年度個申資料建置中，暫不開放！');
+        return;
+      }
+
+      currentChannel = channel;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tab-' + channel).classList.add('active');
+      if(channel === 'ast') {
+        document.getElementById('astInputs').classList.remove('hidden');
+      } else {
+        document.getElementById('astInputs').classList.add('hidden');
+      }
+      
+      lastAnalysisResults = [];
+      document.getElementById('resultContainer').innerHTML = `
+        <div id="emptyState" class="text-center py-16">
+          <i class="fa-solid fa-layer-group text-6xl text-slate-200 mb-4"></i>
+          <h3 class="text-xl font-bold text-slate-400">已切換管道，請重新啟動分析</h3>
+        </div>`;
+      
+      loadSchoolsForTab(channel);
+    }
+
+    async function loadSchoolsForTab(channel) {
+      var statusText = document.getElementById('schoolLoadStatus');
+      var pubContainer = document.getElementById('publicContainer');
+      var priContainer = document.getElementById('privateContainer');
+      
+      statusText.classList.remove('hidden');
+      pubContainer.innerHTML = '';
+      priContainer.innerHTML = '';
+      
+      const res = await callAPI('getSchoolList', { channel: channel });
+      if (res) {
+         var buildHtml = (list, typeClass) => {
+           return list.map(s => `
+             <label class="school-cb-label flex items-center space-x-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-100 p-1.5 rounded transition-colors ${typeClass}">
+               <input type="checkbox" value="${s}" class="school-cb text-blue-600 rounded focus:ring-blue-500 w-4 h-4 flex-shrink-0">
+               <span class="truncate" title="${s}">${s}</span>
+             </label>
+           `).join('');
+         };
+
+         pubContainer.innerHTML = buildHtml(res.publicSchools, 'public-cb');
+         priContainer.innerHTML = buildHtml(res.privateSchools, 'private-cb');
+         statusText.classList.add('hidden');
+         
+         document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            if(cb.id !== 'selectAllSchools' && cb.onchange == null && !cb.classList.contains('group-cb')) cb.checked = false; 
+         });
+         document.getElementById('schoolSearch').value = "";
+         document.querySelectorAll('input[onchange*="toggleAllSchools"]').forEach(cb => cb.checked = false);
+      }
+    }
+
+    function filterSchoolCheckboxes() {
+      var keyword = document.getElementById('schoolSearch').value.toLowerCase();
+      var labels = document.querySelectorAll('.school-cb-label');
+      labels.forEach(function(label) {
+        var schoolName = label.innerText.toLowerCase();
+        label.style.display = schoolName.indexOf(keyword) > -1 ? 'flex' : 'none';
+      });
+    }
+
+    function toggleAllSchools(source, type) {
+      var className = type === 'public' ? '.public-cb .school-cb' : '.private-cb .school-cb';
+      var checkboxes = document.querySelectorAll(className);
+      checkboxes.forEach(function(cb) {
+         if(cb.parentElement.style.display !== 'none') cb.checked = source.checked;
+      });
+    }
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      t.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(()=> t.classList.add('opacity-0', 'pointer-events-none'), 3000);
+    }
+
+    function toggleWishlist() {
+      var d = document.getElementById('wishlistDrawer');
+      var o = document.getElementById('drawerOverlay');
+      if(d.classList.contains('translate-x-full')) {
+        d.classList.remove('translate-x-full');
+        o.classList.remove('hidden');
+      } else {
+        d.classList.add('translate-x-full');
+        o.classList.add('hidden');
+      }
+    }
+
+    function toggleArts() {
+      var a = document.getElementById('artsSection');
+      var i = document.getElementById('artsIcon');
+      if(a.classList.contains('hidden')) {
+        a.classList.remove('hidden');
+        i.classList.replace('fa-chevron-right', 'fa-chevron-down');
+      } else {
+        a.classList.add('hidden');
+        i.classList.replace('fa-chevron-down', 'fa-chevron-right');
+      }
+    }
+
+    function toggleDetails(code) {
+      var detailsDiv = document.getElementById('details-' + code);
+      var chevronIcon = document.getElementById('chevron-' + code);
+      if (detailsDiv.classList.contains('hidden')) {
+        detailsDiv.classList.remove('hidden');
+        chevronIcon.classList.add('rotate-180');
+      } else {
+        detailsDiv.classList.add('hidden');
+        chevronIcon.classList.remove('rotate-180');
+      }
+    }
+
+    function getScoresFromForm() {
+      return {
+        "國文": document.getElementById('國文').value !== "" ? parseInt(document.getElementById('國文').value) : "",
+        "英文": document.getElementById('英文').value !== "" ? parseInt(document.getElementById('英文').value) : "",
+        "數A": document.getElementById('數A').value !== "" ? parseInt(document.getElementById('數A').value) : "",
+        "數B": document.getElementById('數B').value !== "" ? parseInt(document.getElementById('數B').value) : "",
+        "社會": document.getElementById('社會').value !== "" ? parseInt(document.getElementById('社會').value) : "",
+        "自然": document.getElementById('自然').value !== "" ? parseInt(document.getElementById('自然').value) : "",
+        "英聽": document.getElementById('英聽').value.toUpperCase(),
+        "主修": document.getElementById('主修').value !== "" ? parseInt(document.getElementById('主修').value) : "",
+        "視唱": document.getElementById('視唱').value !== "" ? parseInt(document.getElementById('視唱').value) : "",
+        "數甲": document.getElementById('數甲').value !== "" ? parseInt(document.getElementById('數甲').value) : "",
+        "數乙": document.getElementById('數乙').value !== "" ? parseInt(document.getElementById('數乙').value) : "",
+        "物理": document.getElementById('物理').value !== "" ? parseInt(document.getElementById('物理').value) : "",
+        "化學": document.getElementById('化學').value !== "" ? parseInt(document.getElementById('化學').value) : "",
+        "生物": document.getElementById('生物').value !== "" ? parseInt(document.getElementById('生物').value) : "",
+        "歷史": document.getElementById('歷史').value !== "" ? parseInt(document.getElementById('歷史').value) : "",
+        "地理": document.getElementById('地理').value !== "" ? parseInt(document.getElementById('地理').value) : "",
+        "公民": document.getElementById('公民').value !== "" ? parseInt(document.getElementById('公民').value) : "",
+      };
+    }
+
+    async function refreshWishlist() {
+      if(myWishlist.length === 0) { 
+        showToast("志願清單為空，不需要更新"); 
+        return; 
+      }
+      var icon = document.getElementById('refreshWishlistIcon');
+      icon.classList.add('fa-spin');
+      showToast("🔄 正在以最新成績重新計算您的所有志願...");
+
+      const resStr = await callAPI('refreshWishlistColors', { 
+        studentScores: getScoresFromForm(), 
+        wishlistStr: JSON.stringify(myWishlist) 
+      });
+      
+      if (resStr) {
+         myWishlist = JSON.parse(resStr);
+         updateWishlistUI();
+         icon.classList.remove('fa-spin');
+         showToast("✅ 志願燈號已全數同步更新！");
+      }
+    }
+
+    async function startAnalysis() {
+      var selectedSchools = [];
+      document.querySelectorAll('.school-cb:checked').forEach(function(cb) {
+         selectedSchools.push(cb.value);
+      });
+
+      if (selectedSchools.length === 0) {
+         showToast("⚠️ 請至少勾選一間您想查詢的大學！");
+         return;
+      }
+
+      var filters = { schools: selectedSchools, group: "" };
+
+      if (hasOpenedGroup) {
+         var checkedGroups = document.querySelectorAll('.group-cb:checked');
+         if (checkedGroups.length === 0) {
+            showToast("⚠️ 請至少勾選一個學科領域！");
+            return;
+         }
+         var totalGroups = document.querySelectorAll('.group-cb').length;
+         if (checkedGroups.length < totalGroups) {
+             var parts = [];
+             checkedGroups.forEach(function(cb) { parts.push(cb.value); });
+             filters.group = parts.join('|'); 
+         }
+      }
+
+      var btn = document.getElementById('analyzeBtn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-yellow-400 mr-3"></i> 雲端引擎高速運算中...';
+      btn.disabled = true;
+      
+      var container = document.getElementById('resultContainer');
+      container.innerHTML = `
+        <div class="text-center py-16">
+          <i class="fa-solid fa-circle-notch fa-spin text-5xl text-blue-500 mb-6"></i>
+          <h3 class="text-xl font-bold text-slate-700">為您精準換算加權分數，並整理落點區間...</h3>
+        </div>`;
+      container.scrollIntoView({ behavior: 'smooth' });
+
+      const results = await callAPI('analyzeFromWeb', {
+        studentScores: getScoresFromForm(),
+        channel: currentChannel,
+        filters: filters
+      });
+
+      btn.innerHTML = '<i class="fa-solid fa-bolt text-yellow-400 mr-3"></i> 一鍵啟動智能分析';
+      btn.disabled = false;
+
+      if (!results) return;
+
+      container.innerHTML = ""; 
+      lastAnalysisResults = results;
+
+      if(results.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <i class="fa-solid fa-shield-halved text-6xl text-emerald-200 mb-4"></i>
+            <h3 class="text-xl font-bold text-slate-600">已為您擋下所有「危險」科系</h3>
+            <p class="text-sm text-slate-400 mt-2">在您勾選的學校與學科領域中無理想落點。<br>建議放寬選擇或重新調整條件。</p>
+          </div>`;
+        return;
+      }
+
+      var safeHtml = ""; var idealHtml = ""; var dreamHtml = ""; var unknownHtml = ""; 
+      
+      results.forEach(function(item) {
+        var isStarred = myWishlist.some(function(w) { return w.code === item.code && w.channel === currentChannel; });
+        var starIcon = isStarred ? "fa-solid fa-bookmark text-amber-400" : "fa-regular fa-bookmark text-slate-300 group-hover:text-amber-300";
+        
+        var rawAnalysis = item.analysis;
+        var parts = rawAnalysis.split(' ｜ ');
+        var header = parts[0].replace('【', '').replace('】', '');
+        var finalLevel = header.split('|')[0]; 
+        var diffText = header.split('|')[1]; 
+        
+        var wIndex = myWishlist.findIndex(function(w) { return w.code === item.code && w.channel === currentChannel; });
+        if (wIndex !== -1) {
+            myWishlist[wIndex].level = finalLevel;
+        }
+
+        var details = parts.slice(1).map(d => `<li class="flex items-start mb-0.5 text-[11px]"><i class="fa-solid fa-check text-blue-500 mr-1.5 mt-1 text-[9px]"></i><span class="leading-tight">${d}</span></li>`).join('');
+        
+        var badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+        var category = "safe"; 
+        
+        if(finalLevel === "保守") { 
+          badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200"; category = "safe";
+        } else if(finalLevel === "理想") { 
+          badgeClass = "bg-blue-50 text-blue-700 border-blue-200"; category = "ideal";
+        } else if(finalLevel === "夢幻") { 
+          badgeClass = "bg-orange-50 text-orange-700 border-orange-200"; category = "dream";
+        } else if(finalLevel.indexOf("未知") !== -1) { 
+          badgeClass = "bg-slate-100 text-slate-600 border-slate-300"; category = "unknown";
+          diffText = "無資料";
+        }
+
+        var dateHtml = currentChannel !== 'ast' 
+          ? `<div class="text-[11px] text-slate-400 mt-1 truncate"><i class="fa-regular fa-calendar-days text-blue-300 mr-1"></i>面試: ${item.date}</div>` 
+          : ``;
+
+        var safeItemDate = item.date || "";
+        var safeItemReq = item.requirements || "無門檻";
+        var encodedLogs = encodeURIComponent(parts.slice(1).join(" ｜ "));
+
+        var popCount = popularityData[item.code] || 0;
+        var popTag = popCount > 0 ? `<span class="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-bold ml-2 shadow-sm whitespace-nowrap" title="已有 ${popCount} 位其他同學收藏此科系"><i class="fa-solid fa-fire mr-0.5"></i>${popCount} 人想考這</span>` : "";
+
+        var cardHTML = `
+          <div class="bg-white rounded-lg border border-slate-200 shadow-sm hover:border-blue-300 transition-colors group flex flex-col">
+            <div class="p-3 flex justify-between items-start cursor-pointer relative" onclick="toggleDetails('${item.code}')">
+              <div class="flex-1 pr-6 overflow-hidden">
+                <div class="mb-1.5 flex items-center flex-wrap gap-y-1">
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold border ${badgeClass}">
+                    ${diffText} 分
+                  </span>
+                  ${popTag}
+                </div>
+                <h3 class="text-sm font-bold text-slate-800 leading-snug truncate group-hover:text-blue-600 transition-colors" title="${item.school} ${item.dept}">
+                  ${item.school} <span class="text-blue-600">${item.dept}</span>
+                </h3>
+                ${dateHtml}
+              </div>
+              <div class="flex flex-col items-end justify-between h-full pt-0.5 shrink-0 space-y-2">
+                <button class="text-lg transition-transform hover:scale-110 focus:outline-none z-10" onclick="toggleStar(event, '${item.code}', '${item.school}', '${item.dept}', '${finalLevel}', '${item.quota}', '${safeItemReq}', '${safeItemDate}', '${encodedLogs}')">
+                  <i id="star-icon-${item.code}" class="${starIcon} drop-shadow-sm"></i>
+                </button>
+                <i id="chevron-${item.code}" class="fa-solid fa-chevron-down text-[10px] text-slate-300 transition-transform duration-300"></i>
+              </div>
+            </div>
+            <div id="details-${item.code}" class="hidden px-3 pb-3 pt-1 border-t border-slate-100 bg-slate-50/80 rounded-b-lg">
+               <div class="flex flex-wrap gap-x-3 gap-y-1 mb-1.5 pb-1.5 border-b border-slate-200/60 text-[11px]">
+                 <span class="text-slate-600 font-medium">名額: <b class="text-slate-800">${item.quota}</b></span>
+                 <span class="text-slate-600 font-medium">檢定: <b class="text-blue-600">${item.requirements}</b></span>
+               </div>
+               <ul class="list-none p-0 m-0">${details}</ul>
+            </div>
+          </div>
+        `;
+
+        if (category === "safe") safeHtml += cardHTML;
+        else if (category === "ideal") idealHtml += cardHTML;
+        else if (category === "dream") dreamHtml += cardHTML;
+        else if (category === "unknown") unknownHtml += cardHTML;
+      });
+      
+      var finalDisplayHtml = "";
+
+      if (safeHtml !== "") {
+         finalDisplayHtml += `
+           <div class="mb-8">
+             <div class="flex items-center mb-3 border-b-2 border-emerald-200 pb-1.5">
+               <i class="fa-solid fa-shield-halved text-xl text-emerald-500 mr-2"></i>
+               <h3 class="text-xl font-bold text-emerald-700 tracking-wide">保底安全區 <span class="text-xs font-medium text-emerald-600 ml-1.5">(過篩機率高，建議填 1-2 個)</span></h3>
+             </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${safeHtml}</div>
+           </div>`;
+      }
+      if (idealHtml !== "") {
+         finalDisplayHtml += `
+           <div class="mb-8">
+             <div class="flex items-center mb-3 border-b-2 border-blue-200 pb-1.5">
+               <i class="fa-solid fa-arrow-trend-up text-xl text-blue-500 mr-2"></i>
+               <h3 class="text-xl font-bold text-blue-700 tracking-wide">理想目標區 <span class="text-xs font-medium text-blue-600 ml-1.5">(符合實力，建議填 2-3 個)</span></h3>
+             </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${idealHtml}</div>
+           </div>`;
+      }
+      if (dreamHtml !== "") {
+         finalDisplayHtml += `
+           <div class="mb-8">
+             <div class="flex items-center mb-3 border-b-2 border-orange-200 pb-1.5">
+               <i class="fa-solid fa-meteor text-xl text-orange-500 mr-2"></i>
+               <h3 class="text-xl font-bold text-orange-700 tracking-wide">夢幻衝刺區 <span class="text-xs font-medium text-orange-600 ml-1.5">(機率較小，可挑 1 個拚搏)</span></h3>
+             </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${dreamHtml}</div>
+           </div>`;
+      }
+      if (unknownHtml !== "") {
+         finalDisplayHtml += `
+           <div class="mb-8 opacity-70">
+             <div class="flex items-center mb-3 border-b-2 border-slate-200 pb-1.5">
+               <i class="fa-solid fa-circle-question text-xl text-slate-400 mr-2"></i>
+               <h3 class="text-xl font-bold text-slate-600 tracking-wide">參考資料不足區 <span class="text-xs font-medium text-slate-500 ml-1.5">(無歷史分數)</span></h3>
+             </div>
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${unknownHtml}</div>
+           </div>`;
+      }
+
+      container.innerHTML = finalDisplayHtml;
+      updateWishlistUI();
+    }
+
+    function toggleStar(event, code, school, dept, level, quota, reqs, date, encodedLogs) {
+      event.stopPropagation();
+      if(!currentUser) {
+        Swal.fire("提示", "需登入帳號才能收藏唷！", "info");
+        toggleLoginModal();
+        return;
+      }
+
+      var name = school + " " + dept;
+      var index = myWishlist.findIndex(function(w) { return w.code === code && w.channel === currentChannel; });
+      var iconElement = document.getElementById('star-icon-' + code);
+
+      if (index === -1) {
+        var logs = encodedLogs ? decodeURIComponent(encodedLogs) : "";
+        myWishlist.push({
+           code: code, name: name, channel: currentChannel, level: level,
+           quota: quota, requirements: reqs, date: date, logs: logs
+        });
+        if(iconElement) iconElement.className = "fa-solid fa-bookmark text-amber-400 transition-colors duration-200 drop-shadow-md";
+        showToast("⭐ 已加入志願清單");
+      } else {
+        myWishlist.splice(index, 1);
+        if(iconElement) iconElement.className = "fa-regular fa-bookmark text-slate-300 group-hover:text-amber-300 transition-colors duration-200";
+        showToast("已移除志願");
+      }
+      updateWishlistUI();
+    }
+
+    async function updateWishlistUI() {
+      var display = document.getElementById('wishlistDisplay');
+      var collisionBox = document.getElementById('collisionBox');
+      var countBadge = document.getElementById('navWishlistCount');
+      
+      if(myWishlist.length > 0) {
+        countBadge.innerText = myWishlist.length;
+        countBadge.classList.remove('hidden');
+      } else {
+        countBadge.classList.add('hidden');
+      }
+
+      if(myWishlist.length === 0) {
+        display.innerHTML = "<div class='text-center text-slate-400 text-sm mt-10'>空空如也<br>點擊卡片書籤來收藏校系</div>";
+        collisionBox.innerHTML = '<i class="fa-solid fa-circle-info mt-0.5"></i><span>加入個申與四技志願後，將自動檢查撞期。</span>';
+        collisionBox.className = "p-3 rounded-lg text-sm font-medium flex items-start space-x-2 bg-slate-50 text-slate-500 border border-slate-200";
+      } else {
+        var gsatList = myWishlist.filter(w => w.channel === 'gsat');
+        var techList = myWishlist.filter(w => w.channel === 'tech');
+        var astList = myWishlist.filter(w => w.channel === 'ast');
+
+        var buildSection = (title, icon, list, categoryId) => {
+          if(list.length === 0) return '';
+          return `
+          <div class="mb-4 bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+            <button onclick="toggleWishlistCategory('${categoryId}')" class="w-full text-left px-4 py-3 bg-slate-50 hover:bg-slate-100 flex justify-between items-center transition-colors">
+              <h4 class="text-base font-bold text-slate-700 flex items-center"><i class="${icon} mr-2"></i>${title} <span class="ml-2 text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">${list.length}</span></h4>
+              <i id="icon-${categoryId}" class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-200"></i>
+            </button>
+            <div id="content-${categoryId}" class="hidden p-3 space-y-3 bg-slate-50/50 border-t border-slate-100">
+             ${list.map(w => {
+               var bgClass = "bg-white border-slate-200";
+               var textClass = "text-slate-700 border-blue-500";
+               var levelTag = "";
+          
+               if (w.level === "保守") {
+                   bgClass = "bg-emerald-50 border-emerald-200"; textClass = "text-emerald-800 border-emerald-500";
+                   levelTag = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0">保</span>`;
+               } else if (w.level === "理想") {
+                   bgClass = "bg-blue-50 border-blue-200"; textClass = "text-blue-800 border-blue-500";
+                   levelTag = `<span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0">理</span>`;
+               } else if (w.level === "夢幻") {
+                   bgClass = "bg-orange-50 border-orange-200"; textClass = "text-orange-800 border-orange-500";
+                   levelTag = `<span class="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0">夢</span>`;
+               } else if (w.level && w.level.indexOf("未知") !== -1) {
+                   bgClass = "bg-slate-100 border-slate-300"; textClass = "text-slate-600 border-slate-400";
+                   levelTag = `<span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-1.5 shrink-0">?</span>`;
+               }
+
+               var detailsHtml = "";
+               var noteContent = w.note ? w.note : ""; 
+          
+               if (w.quota) {
+                 var logList = (w.logs || "").split(" ｜ ").filter(Boolean).map(d => `<li class="flex items-start mb-0.5 text-[11px]"><i class="fa-solid fa-check text-blue-500 mr-1.5 mt-1 text-[9px]"></i><span class="leading-tight text-slate-600">${d}</span></li>`).join('');
+                 var dateHtml = w.channel !== 'ast' && w.date ? `<div class="text-[11px] text-slate-500 mt-1"><i class="fa-regular fa-calendar-days text-blue-400 mr-1"></i>面試: ${w.date}</div>` : '';
+                 detailsHtml = `
+                   <div id="wishlist-details-${w.code}" class="hidden mt-2 pt-2 border-t border-slate-200/60">
+                     <div class="flex flex-wrap gap-x-3 gap-y-1 mb-1.5 text-[11px]">
+                        <span class="text-slate-600 font-medium">名額: <b class="text-slate-800">${w.quota}</b></span>
+                        <span class="text-slate-600 font-medium">檢定: <b class="text-blue-600">${w.requirements || '無'}</b></span>
+                     </div>
+                     ${dateHtml}
+                     <ul class="list-none p-0 m-0 mt-1.5 mb-3">${logList}</ul>
+                
+                     <div class="bg-amber-50 rounded p-2 border border-amber-200/50 mt-2">
+                        <div class="text-[10px] font-bold text-amber-700 mb-1 flex items-center"><i class="fa-solid fa-pen-clip mr-1"></i>我的專屬備忘錄 (自動儲存)</div>
+                        <textarea onclick="event.stopPropagation()" onchange="updateWishlistNote('${w.code}', '${w.channel}', this)" rows="2" class="w-full bg-white border border-amber-200 rounded text-xs p-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-amber-400 resize-none placeholder-amber-200" placeholder="例如：要準備英文自介、教授喜歡問...">${noteContent}</textarea>
+                     </div>
+                   </div>
+                 `;
+               } else {
+                 detailsHtml = `<div id="wishlist-details-${w.code}" class="hidden mt-2 pt-2 border-t border-slate-200/60 text-xs text-slate-400 text-center py-2">💡 請點擊上方「更新燈號」載入分數與詳細資訊</div>`;
+               }
+
+               var popCount = popularityData[w.code] || 0;
+               var popHtml = popCount > 0 ? `<span class="text-[10px] text-red-500 font-bold ml-1.5 whitespace-nowrap"><i class="fa-solid fa-fire"></i> ${popCount}</span>` : "";
+
+               return `
+               <div class="border rounded-lg shadow-sm group hover:shadow-md transition-all overflow-hidden ${bgClass}">
+                 <div class="p-3.5 flex items-center justify-between cursor-pointer" onclick="toggleWishlistDetails('${w.code}')">
+                   <div class="flex items-center flex-wrap w-5/6 gap-y-1">
+                      <span class="text-sm font-bold truncate border-l-4 pl-2.5 text-left w-full sm:w-auto sm:max-w-[70%] ${textClass}">${w.name}</span>
+                      <div class="flex items-center mt-0.5 sm:mt-0">
+                        ${levelTag}
+                        ${popHtml}
+                      </div>
+                   </div>
+                   <div class="flex items-center space-x-2 shrink-0">
+                     <i id="wishlist-chevron-${w.code}" class="fa-solid fa-chevron-down text-[10px] text-slate-300 transition-transform"></i>
+                     <button class="text-slate-300 hover:text-red-500 transition-colors px-1 z-10" onclick="removeWishlistItem(event, '${w.code}', '${w.channel}')"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                   </div>
+                 </div>
+                 <div class="px-3.5 pb-3 pt-0 bg-white/40">
+                   ${detailsHtml}
+                 </div>
+               </div>`;
+             }).join('')}
+           </div>
+         </div>`;
+     };
+
+        var html = "";
+        html += buildSection("大學個人申請", "fa-solid fa-university text-blue-500", gsatList, "gsat");
+        html += buildSection("四技申請 (科大)", "fa-solid fa-wrench text-orange-500", techList, "tech");
+        html += buildSection("分科測驗分發", "fa-solid fa-file-pen text-purple-500", astList, "ast");
+        display.innerHTML = html;
+        
+        var codesForCollision = [...gsatList, ...techList].map(w => w.code).join(',');
+        
+        if (codesForCollision === "") {
+           collisionBox.innerHTML = '<i class="fa-solid fa-calendar-check flex-shrink-0 mt-0.5 text-sm"></i> <span>分科測驗無需面試，無撞期風險。</span>';
+           collisionBox.className = "p-3 rounded-lg text-sm font-bold flex items-start space-x-2 bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm";
+        } else {
+           collisionBox.innerHTML = '<i class="fa-solid fa-radar fa-spin flex-shrink-0 mt-0.5 text-blue-500 text-sm"></i> <span class="text-slate-600">掃描面試時程中...</span>';
+           collisionBox.className = "p-3 rounded-lg text-sm font-medium flex items-start space-x-2 bg-blue-50 border border-blue-100";
+           
+           const collisionRes = await callAPI('checkWishlistCollision', { wishlistStr: codesForCollision });
+           if (collisionRes) {
+             if(collisionRes.indexOf("⚠️") !== -1) {
+               collisionBox.className = "p-3 rounded-lg text-sm font-bold flex items-start space-x-2 bg-red-50 text-red-600 border border-red-200 shadow-sm";
+               collisionBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation flex-shrink-0 mt-0.5 text-lg"></i> <span class="whitespace-pre-wrap leading-tight">' + collisionRes + '</span>';
+             } else {
+               collisionBox.className = "p-3 rounded-lg text-sm font-bold flex items-start space-x-2 bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm";
+               collisionBox.innerHTML = '<i class="fa-solid fa-calendar-check flex-shrink-0 mt-0.5 text-lg"></i> <span>' + collisionRes + '</span>';
+             }
+           }
+        }
+      }
+    }
+
+    function toggleWishlistCategory(id) {
+      var content = document.getElementById('content-' + id);
+      var icon = document.getElementById('icon-' + id);
+      if(content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleWishlistDetails(code) {
+      var details = document.getElementById('wishlist-details-' + code);
+      var icon = document.getElementById('wishlist-chevron-' + code);
+      if(details) {
+        if(details.classList.contains('hidden')) {
+          details.classList.remove('hidden');
+          icon.classList.add('rotate-180');
+        } else {
+          details.classList.add('hidden');
+          icon.classList.remove('rotate-180');
+        }
+      }
+    }
+
+    function removeWishlistItem(event, code, channel) {
+      if (event) event.stopPropagation();
+      var index = myWishlist.findIndex(function(w) { return w.code === code && w.channel === channel; });
+      if (index !== -1) {
+        myWishlist.splice(index, 1);
+        showToast("已移除志願");
+        if (channel === currentChannel) {
+           var iconElement = document.getElementById('star-icon-' + code);
+           if(iconElement) iconElement.className = "fa-regular fa-bookmark text-slate-300 group-hover:text-amber-300 transition-colors duration-200";
+        }
+        updateWishlistUI();
+      }
+    }
+
+    async function saveData() {
+      if(!currentUser) {
+        Swal.fire("提示", "請先登入才能儲存唷！", "info");
+        toggleLoginModal();
+        return;
+      }
+      var scoresJSON = JSON.stringify(getScoresFromForm());
+      var wishlistStr = JSON.stringify(myWishlist); 
+      showToast("🔄 雲端安全同步中...");
+      
+      const res = await callAPI('saveUserData', { username: currentUser, scoresStr: scoresJSON, wishlistStr: wishlistStr });
+      if (res) showToast("✅ 資料已安全同步");
+    }
+
+    function toggleFeedbackModal() {
+      var m = document.getElementById('feedbackModal');
+      var box = document.getElementById('feedbackBox');
+      if(m.classList.contains('hidden')) {
+        m.classList.remove('hidden');
+        setTimeout(()=> box.classList.remove('scale-95'), 10);
+      } else {
+        box.classList.add('scale-95');
+        setTimeout(()=> m.classList.add('hidden'), 200);
+      }
+    }
+
+    async function sendFeedback() {
+      var type = document.getElementById('fbType').value;
+      var content = document.getElementById('fbContent').value.trim();
+      var contact = document.getElementById('fbContact').value.trim();
+      
+      if(!content) {
+        Swal.fire("提示", "請填寫你想說的話喔！", "warning");
+        return;
+      }
+
+      var btn = document.getElementById('fbSubmitBtn');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 傳送中...';
+      btn.disabled = true;
+
+      const res = await callAPI('submitFeedback', { username: currentUser, type: type, content: content, contact: contact });
+      
+      btn.innerHTML = '送出訊息給站長';
+      btn.disabled = false;
+      if (res) {
+        document.getElementById('fbContent').value = ''; 
+        toggleFeedbackModal(); 
+        Swal.fire("傳送成功", res, "success");
+      }
+    }
+
+    function updateWishlistNote(code, channel, element) {
+      var index = myWishlist.findIndex(function(w) { return w.code === code && w.channel === channel; });
+      if (index !== -1) {
+        myWishlist[index].note = element.value; 
+        if(currentUser) {
+           callAPI('saveUserData', { username: currentUser, scoresStr: JSON.stringify(getScoresFromForm()), wishlistStr: JSON.stringify(myWishlist) });
+        }
+      }
+    }
+
+    function openRecommendModal() {
+        if (lastAnalysisResults.length === 0) {
+            Swal.fire("提示", "請先點擊「一鍵啟動智能分析」，有了數據才能為您推薦喔！", "info");
+            return;
+        }
+        document.getElementById('recommendSetup').classList.remove('hidden');
+        document.getElementById('recommendResults').classList.add('hidden');
+        
+        var m = document.getElementById('recommendModal');
+        var box = document.getElementById('recommendBox');
+        m.classList.remove('hidden');
+        setTimeout(()=> box.classList.remove('scale-95'), 10);
+    }
+
+    function closeRecommendModal() {
+        var m = document.getElementById('recommendModal');
+        var box = document.getElementById('recommendBox');
+        box.classList.add('scale-95');
+        setTimeout(()=> m.classList.add('hidden'), 200);
+    }
+
+    function getRegion(schoolName) {
+        if(/臺北|台北|新北|基隆|桃園|新竹|宜蘭|台大|政大|師大|北大|陽明|清大|交大|中央|輔仁|東吳|淡江|中原|元智|大同|世新|銘傳|實踐|海洋|北科|台科|臺科/.test(schoolName)) return 'north';
+        if(/臺中|台中|苗栗|彰化|南投|雲林|中興|東海|逢甲|靜宜|亞洲|中山醫|中國醫|建國|大葉|彰師|暨南|勤益|中科/.test(schoolName)) return 'central';
+        if(/臺南|台南|嘉義|高雄|屏東|成大|中山|中正|高師|高大|長榮|義守|南華|高醫|南科|高科|屏科/.test(schoolName)) return 'south';
+        if(/花蓮|臺東|台東|東華|慈濟|宜蘭大|金門|澎湖/.test(schoolName)) return 'east';
+        return 'other'; 
+    }
+
+    function getSchoolScore(schoolName) {
+        if(/臺大|台大|清大|交大|成大|政大|陽明/.test(schoolName)) return 100; 
+        if(/中央|中山|中正|中興|臺北大學|北大|台科大|臺科大|北科大/.test(schoolName)) return 90; 
+        if(/師大|彰師|高師|高大|海大|海洋|北醫|中國醫|中山醫|長庚|高醫/.test(schoolName)) return 80; 
+        if(/輔仁|東吳|淡江|中原|元智|東海|逢甲/.test(schoolName)) return 70; 
+        if(/靜宜|世新|銘傳|實踐|大同|文化|聯合|勤益|屏科|中科/.test(schoolName)) return 60; 
+        if(/國立|市立/.test(schoolName)) return 75; 
+        return 50; 
+    }
+
+    function sortAndPick(array, count) {
+        if(array.length === 0) return [];
+        array.sort((a, b) => {
+            let scoreA = getSchoolScore(a.school);
+            let scoreB = getSchoolScore(b.school);
+            if (scoreA === scoreB) return Math.random() - 0.5; 
+            return scoreB - scoreA; 
+        });
+        return array.slice(0, count);
+    }
+
+    function executeRecommendation() {
+        let prefPub = document.getElementById('recPublic').value;
+        let strategy = document.getElementById('recStrategy').value;
+        
+        let selectedRegions = Array.from(document.querySelectorAll('.rec-region-cb:checked')).map(cb => cb.value);
+        let selectedGroups = Array.from(document.querySelectorAll('.rec-group-cb:checked')).map(cb => cb.value);
+        let groupRegexStr = selectedGroups.join('|');
+        let groupRegex = groupRegexStr ? new RegExp(groupRegexStr) : null;
+
+        if (selectedRegions.length === 0) {
+            Swal.fire("提示", "請至少選擇一個地區！", "warning");
+            return;
+        }
+        if (selectedGroups.length === 0) {
+            Swal.fire("提示", "請至少選擇一個學群方向！", "warning");
+            return;
+        }
+
+        let filtered = lastAnalysisResults.filter(item => {
+            let isPublic = /國立|市立/.test(item.school);
+            let passPub = prefPub === 'any' || (prefPub === 'public' && isPublic) || (prefPub === 'private' && !isPublic);
+            
+            let region = getRegion(item.school);
+            let passReg = selectedRegions.includes(region);
+            
+            let passGroup = groupRegex ? groupRegex.test(item.dept) : true;
+            
+            return passPub && passReg && passGroup;
+        });
+
+        let safe = filtered.filter(i => i.analysis.includes('保守'));
+        let ideal = filtered.filter(i => i.analysis.includes('理想'));
+        let dream = filtered.filter(i => i.analysis.includes('夢幻'));
+
+        let recSafe = [], recIdeal = [], recDream = [];
+
+        if (strategy === 'conservative') {
+            recSafe = sortAndPick(safe, 6);
+            recIdeal = sortAndPick(ideal, 5);
+            recDream = sortAndPick(dream, 1);
+        } else if (strategy === 'aggressive') {
+            recSafe = sortAndPick(safe, 2);
+            recIdeal = sortAndPick(ideal, 5);
+            recDream = sortAndPick(dream, 5);
+        } else { 
+            recSafe = sortAndPick(safe, 4);
+            recIdeal = sortAndPick(ideal, 5);
+            recDream = sortAndPick(dream, 3);
+        }
+
+        let finalRecs = [...recSafe, ...recIdeal, ...recDream];
+        
+        if (finalRecs.length > 0 && finalRecs.length < 12) {
+            let usedCodes = new Set(finalRecs.map(i => i.code));
+            let remaining = filtered.filter(i => !usedCodes.has(i.code));
+            let extraRecs = sortAndPick(remaining, 12 - finalRecs.length);
+            finalRecs = [...finalRecs, ...extraRecs];
+        }
+
+        renderRecResults(finalRecs);
+    }
+
+    function renderRecResults(recs) {
+        document.getElementById('recommendSetup').classList.add('hidden');
+        let resContainer = document.getElementById('recommendResults');
+        resContainer.classList.remove('hidden');
+
+        let html = '';
+        if (recs.length === 0) {
+            html = '<div class="text-center text-slate-500 py-10">條件太嚴苛囉！<br>找不到符合的科系，請嘗試放寬條件。</div>';
+        } else {
+            html += `<div class="text-sm font-bold text-indigo-600 mb-3"><i class="fa-solid fa-bolt text-yellow-400 mr-1.5"></i>為您精選 ${recs.length} 個志願組合：</div>`;
+            html += '<div class="space-y-3 max-h-[50vh] overflow-y-auto px-1 pb-2">';
+            
+            recs.forEach(item => {
+                var parts = item.analysis.split(' ｜ ');
+                var header = parts[0].replace('【', '').replace('】', '');
+                var finalLevel = header.split('|')[0]; 
+                var diffText = header.split('|')[1]; 
+                
+                var badgeClass = "bg-slate-100 text-slate-700 border-slate-200";
+                if(finalLevel === "保守") badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                else if(finalLevel === "理想") badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                else if(finalLevel === "夢幻") badgeClass = "bg-orange-50 text-orange-700 border-orange-200";
+                
+                var safeItemDate = item.date || "";
+                var safeItemReq = item.requirements || "無門檻";
+                var encodedLogs = encodeURIComponent(parts.slice(1).join(" ｜ "));
+
+                var isStarred = myWishlist.some(function(w) { return w.code === item.code && w.channel === currentChannel; });
+                var btnHtml = isStarred 
+                  ? `<button disabled class="text-xs bg-slate-200 text-slate-500 font-bold px-3 py-1.5 rounded cursor-not-allowed whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i>已加入</button>`
+                  : `<button onclick="toggleStarRec(event, '${item.code}', '${item.school}', '${item.dept}', '${finalLevel}', '${item.quota}', '${safeItemReq}', '${safeItemDate}', '${encodedLogs}', this)" class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-1.5 rounded transition-colors whitespace-nowrap shadow-sm"><i class="fa-solid fa-plus mr-1"></i>加入</button>`;
+
+                html += `
+                  <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm flex justify-between items-center hover:border-indigo-300 transition-colors">
+                     <div class="w-3/4 pr-2">
+                        <div class="mb-1.5"><span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${badgeClass}">${finalLevel} ${diffText}</span></div>
+                        <div class="text-sm font-bold text-slate-800 truncate" title="${item.school} ${item.dept}">${item.school} <span class="text-indigo-600">${item.dept}</span></div>
+                     </div>
+                     <div class="shrink-0">${btnHtml}</div>
+                  </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        html += `<button onclick="openRecommendModal()" class="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg transition-colors text-sm shadow-sm"><i class="fa-solid fa-rotate-left mr-1.5"></i>重新設定條件</button>`;
+        
+        resContainer.innerHTML = html;
+    }
+
+    function toggleStarRec(event, code, school, dept, level, quota, reqs, date, encodedLogs, btnElement) {
+        toggleStar(event, code, school, dept, level, quota, reqs, date, encodedLogs);
+        btnElement.disabled = true;
+        btnElement.className = "text-xs bg-slate-200 text-slate-500 font-bold px-3 py-1.5 rounded cursor-not-allowed whitespace-nowrap";
+        btnElement.innerHTML = '<i class="fa-solid fa-check mr-1"></i>已加入';
+    }
+
+    async function callTrueAI() {
+      if (!currentUser) {
+        Swal.fire("提示", "需登入帳號才能召喚專屬 AI 喔！", "info");
+        toggleLoginModal();
+        return;
+      }
+      
+      if (myWishlist.length === 0) {
+        Swal.fire("提示", "你的志願清單空空如也，AI 不知道你想考哪裡呀！", "warning");
+        return;
+      }
+
+      var btn = document.getElementById('trueAiBtn');
+      
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> AI 導師正在為你評估中...';
+      btn.disabled = true;
+
+      var scoresJSON = JSON.stringify(getScoresFromForm());
+      var wishlistStr = JSON.stringify(myWishlist);
+
+      const res = await callAPI('generateTrueAIStrategy', { username: currentUser, scoresStr: scoresJSON, wishlistStr: wishlistStr });
+
+      btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> 召喚 AI 專屬升學策略 (每日 1 次)';
+      btn.disabled = false;
+      
+      if (res) {
+        document.getElementById('aiStrategyResult').classList.remove('hidden');
+        
+        if (res.indexOf("✅") !== -1) {
+          var formattedText = res.replace("✅ ", "")
+                                 .replace(/\n/g, "<br>")
+                                 .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-indigo-800">$1</span>');
+          
+          document.getElementById('aiStrategyContent').innerHTML = '<strong><i class="fa-solid fa-robot mr-1"></i> AI 導師建議：</strong><div class="mt-2">' + formattedText + '</div>';
+          document.getElementById('toggleAiHistoryBtn').classList.add('hidden');
+          Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'AI 分析完成！', showConfirmButton: false, timer: 2000});
+        } else {
+          document.getElementById('aiStrategyContent').innerHTML = '<span class="text-red-600">' + res + '</span>';
+          document.getElementById('toggleAiHistoryBtn').classList.add('hidden');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
